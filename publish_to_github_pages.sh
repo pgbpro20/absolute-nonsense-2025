@@ -51,15 +51,23 @@ git branch -M "$BRANCH" || true
 # Check if repo already exists on GitHub
 if gh repo view "$GH_USER/$REPO_NAME" >/dev/null 2>&1; then
   echo "Repository $GH_USER/$REPO_NAME already exists on GitHub."
-  # Set origin if not already set
+  # Set origin to use gh protocol for authentication
+  REMOTE_URL="https://github.com/${GH_USER}/${REPO_NAME}.git"
   if git remote get-url origin >/dev/null 2>&1; then
-    echo "Using existing remote origin: $(git remote get-url origin)"
+    echo "Updating remote origin to: $REMOTE_URL"
+    git remote set-url origin "$REMOTE_URL"
   else
     echo "Adding origin remote..."
-    git remote add origin "https://github.com/${GH_USER}/${REPO_NAME}.git"
+    git remote add origin "$REMOTE_URL"
   fi
-  echo "Pushing to origin/${BRANCH}..."
-  git push -u origin "$BRANCH"
+  echo "Pushing to origin/${BRANCH} using gh..."
+  GIT_ASKPASS="" git push -u origin "$BRANCH" 2>&1 | grep -v "Password" || {
+    # If regular push fails, use gh auth git-credential helper
+    echo "Using gh credential helper..."
+    git config --local credential.helper ""
+    git config --local credential.helper '!gh auth git-credential'
+    git push -u origin "$BRANCH"
+  }
 else
   echo "Creating repository $GH_USER/$REPO_NAME on GitHub and pushing..."
   # creates, sets remote, and pushes the current directory to the new repo
