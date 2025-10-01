@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hello Natalie — Agentic AI Demo</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #071028;
+      --card: rgba(255,255,255,0.03);
+      --accent: #7c3aed;
+      --muted: #9aa6bf;
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial;}
+    body{
+      background: linear-gradient(180deg,#041022 0%, #071831 75%);
+      color:#e9f2ff;
+      display:flex;align-items:center;justify-content:center;padding:28px;
+    }
+
+    .wrap {
+      width:1100px; max-width:calc(100% - 40px);
+      border-radius:16px; padding:20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 10px 40px rgba(1,6,20,0.7);
+      display:grid; grid-template-columns: 1fr 360px; gap:16px;
+    }
+
+    /* Hero */
+    .hero {
+      grid-column: 1 / -1;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:18px; border-radius:12px; background: linear-gradient(90deg, rgba(124,58,237,0.08), rgba(34,197,94,0.02));
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .greeting {
+      font-weight:800; font-size:40px; line-height:1;
+      letter-spacing:-0.02em;
+      text-shadow: 0 6px 24px rgba(124,58,237,0.14);
+    }
+    .greeting small { display:block; font-size:14px; font-weight:600; color:var(--muted); margin-top:6px; }
+
+    .sparkle {
+      display:inline-block; transform-origin:center; animation:pop 1200ms ease;
+    }
+    @keyframes pop { 0%{transform:scale(.9) rotate(-6deg)} 50%{transform:scale(1.06) rotate(4deg)} 100%{transform:scale(1) rotate(0)} }
+
+    /* Main layout */
+    .main { display:flex; flex-direction:column; gap:12px; }
+    .card { background:var(--card); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.02); }
+    .charts { display:flex; gap:12px; }
+    .chart { flex:1; height:260px; padding:8px; }
+    .chart canvas{ width:100% !important; height:220px !important; display:block; }
+
+    .side { display:flex; flex-direction:column; gap:12px; min-height:420px; }
+
+    .controls { display:flex; gap:8px; flex-wrap:wrap; }
+    button {
+      background: linear-gradient(90deg,var(--accent),#4f46e5); border:none; color:white;
+      padding:10px 12px; border-radius:9px; cursor:pointer; font-weight:700;
+      box-shadow:0 8px 20px rgba(124,58,237,0.14);
+    }
+    .ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); box-shadow:none; color:white; font-weight:600; padding:8px 10px; border-radius:8px; }
+
+    .log { height:240px; overflow:auto; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02)); padding:10px; border-radius:8px; font-family:ui-monospace,monospace; font-size:13px; }
+
+    .meta { font-size:13px; color:var(--muted); }
+
+    footer { grid-column:1 / -1; text-align:center; color:var(--muted); font-size:12px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <div class="hero">
+      <div>
+        <div class="greeting">Hello <span style="color:#fff3b0">Natalie</span> <span class="sparkle">✨</span></div>
+        <small class="meta">A tiny agentic AI demo — charts update automatically and the agent explains steps.</small>
+      </div>
+      <div style="text-align:right">
+        <div class="meta">Shareable static page • Host on GitHub Pages / Vercel / S3</div>
+        <div style="margin-top:8px"><button id="confettiBtn" class="ghost">Celebrate 🎉</button></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:700">Live data & agent</div>
+          <div class="meta">Client-only — no backend</div>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="card chart">
+          <div class="meta" style="margin-bottom:8px">Sales trend (last 12 months)</div>
+          <canvas id="lineChart"></canvas>
+        </div>
+
+        <div class="card chart" style="width:320px;flex:0 0 320px;">
+          <div class="meta" style="margin-bottom:8px">Channel breakdown</div>
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="card chart">
+          <div class="meta" style="margin-bottom:8px">Opportunities by region</div>
+          <canvas id="barChart"></canvas>
+        </div>
+
+        <div class="card" style="width:320px;flex:0 0 320px;">
+          <div style="font-weight:700; margin-bottom:8px">Agent log</div>
+          <div id="agentLog" class="log" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <footer>Tip: press "Run Agent" to watch the agent analyze the data (animated updates).</footer>
+    </div>
+
+    <aside class="side">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:700">Controls</div>
+          <div class="meta">Mode</div>
+        </div>
+
+        <div style="margin-top:10px" class="controls">
+          <button id="runAgentBtn">Run Agent</button>
+          <button id="randomizeBtn" class="ghost">Randomize Data</button>
+          <button id="resetBtn" class="ghost">Reset</button>
+        </div>
+
+        <div style="margin-top:12px">
+          <label style="font-size:13px;margin-right:8px"><input type="radio" name="mode" value="inspect" checked> Inspect</label>
+          <label style="font-size:13px;margin-right:8px"><input type="radio" name="mode" value="optimize"> Optimize</label>
+          <label style="font-size:13px;"><input type="radio" name="mode" value="creative"> Creative</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700; margin-bottom:8px">Agent summary</div>
+        <div id="agentSummary" class="meta">Idle — press Run Agent to start a short analysis and update.</div>
+      </div>
+
+      <div class="card meta" style="font-size:13px">
+        Hosting suggestions (persistent & public):
+        <ul style="margin:8px 0 0 18px">
+          <li><strong>GitHub Pages</strong> — free, persistent, easy. (Recommended)</li>
+          <li><strong>Vercel</strong> — great for repo-backed automatic deploys.</li>
+          <li><strong>S3 + CloudFront</strong> — for custom domains and enterprise setups.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // confetti helper
+    function burstConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.2 }
+        });
+      }
+    }
+    document.getElementById('confettiBtn').addEventListener('click', () => { burstConfetti(); log('Manual celebration!'); });
+
+    // pretty log
+    function now(){ return new Date().toLocaleTimeString(); }
+    function log(msg){ const p = document.createElement('div'); p.textContent = '['+now()+'] ' + msg; const c = document.getElementById('agentLog'); c.prepend(p); }
+
+    // datasets
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const baseSales = months.map((_,i)=> Math.round(80 + Math.sin(i/2)*30 + i*4 + (Math.random()*18-9)));
+    const baseRegions = ['North','South','East','West'];
+    const baseRegionVals = [120,90,75,60];
+    const baseChannels = ['Direct','Online','Partners'];
+
+    // create charts
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const barCtx  = document.getElementById('barChart').getContext('2d');
+    const pieCtx  = document.getElementById('pieChart').getContext('2d');
+
+    const lineChart = new Chart(lineCtx, {
+      type:'line',
+      data:{ labels: months, datasets:[{label:'Sales', data:baseSales, tension:0.36, borderWidth:2, fill:true, backgroundColor:'rgba(124,58,237,0.10)', borderColor:'rgba(124,58,237,0.98)', pointRadius:3 }]},
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:false}} }
+    });
+
+    const barChart = new Chart(barCtx, {
+      type:'bar',
+      data:{ labels: baseRegions, datasets:[{label:'Opportunities', data:baseRegionVals, borderRadius:6, backgroundColor:['rgba(99,102,241,0.9)','rgba(14,165,233,0.9)','rgba(34,197,94,0.9)','rgba(236,72,153,0.9)']}]},
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+    });
+
+    const pieChart = new Chart(pieCtx, {
+      type:'pie',
+      data:{ labels: baseChannels, datasets:[{data:[55,30,15], backgroundColor:['rgba(99,102,241,0.9)','rgba(14,165,233,0.9)','rgba(34,197,94,0.9)']}]},
+      options:{ responsive:true, plugins:{legend:{position:'bottom'}} }
+    });
+
+    // agent simulation (same structure as before, plus confetti on success)
+    function avg(a){ return Math.round(a.reduce((x,y)=>x+y,0)/a.length); }
+
+    function simulateAgent(mode='inspect'){
+      document.getElementById('agentSummary').textContent = 'Agent running ('+mode+') — performing stepwise analysis...';
+      log('Agent started in "'+mode+'" mode');
+
+      const steps = [
+        {desc:'Scan datasets & compute baselines', fn: ()=> { log('Baseline sales avg: ' + avg(lineChart.data.datasets[0].data)); } },
+        {desc:'Detect trend / anomalies', fn: ()=> {
+          const d = lineChart.data.datasets[0].data; const slope = d[d.length-1] - d[0];
+          log('Detected trend slope: ' + slope + (slope>0 ? ' (up)' : ' (down)'));
+        }},
+        {desc:'Recommend channel shift', fn: ()=> {
+          const p = pieChart.data.datasets[0].data;
+          if(mode==='optimize'){ p[0]+=6; p[1]-=3; p[2]-=3; log('Recommend boosting Direct channel by +6%'); }
+          else if(mode==='creative'){ p[2]+=8; p[0]-=4; p[1]-=4; log('Try creative push via Partners (+8%)'); }
+          else { log('No channel changes recommended (inspect)'); }
+          pieChart.update();
+        }},
+        {desc:'Simulate marketing action', fn: ()=> {
+          const arr = lineChart.data.datasets[0].data;
+          for(let i=9;i<12;i++){ arr[i] = Math.round(arr[i] * (1 + (Math.random()*0.08))); }
+          log('Applied short-term boost to last 3 months');
+          lineChart.update();
+        }},
+        {desc:'Rebalance regional ops', fn: ()=> {
+          const b = barChart.data.datasets[0].data;
+          if(mode==='optimize'){ b[0]+=15; b[2]-=8; log('Shifted ops: North +15, East -8'); }
+          else if(mode==='creative'){ b[3]+=12; log('Invested in West region (+12) for exploration'); }
+          barChart.update();
+        }},
+        {desc:'Summarize & commit', fn: ()=> {
+          log('Agent finished — summary available. 🎯');
+          document.getElementById('agentSummary').textContent = 'Agent finished — try another run or randomize data.';
+          burstConfetti();
+        }}
+      ];
+
+      let i = 0;
+      function nextStep(){
+        if(i>=steps.length) return;
+        log('STEP ' + (i+1) + ': ' + steps[i].desc);
+        try { steps[i].fn(); } catch(e){ log('Step error: '+e.message); }
+        i++; setTimeout(nextStep, 700);
+      }
+      nextStep();
+    }
+
+    // Controls
+    document.getElementById('runAgentBtn').addEventListener('click', ()=>{
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      simulateAgent(mode);
+    });
+
+    document.getElementById('randomizeBtn').addEventListener('click', ()=>{
+      const d = lineChart.data.datasets[0].data;
+      for(let i=0;i<d.length;i++){ d[i] = Math.max(12, Math.round(d[i] * (0.82 + Math.random()*0.36))); }
+      pieChart.data.datasets[0].data = [Math.floor(40+Math.random()*40), Math.floor(10+Math.random()*35), Math.floor(5+Math.random()*25)];
+      barChart.data.datasets[0].data = barChart.data.datasets[0].data.map(x => Math.max(10, Math.round(x * (0.7 + Math.random()*0.6))));
+      lineChart.update(); pieChart.update(); barChart.update();
+      log('Randomized data for exploration');
+      document.getElementById('agentSummary').textContent = 'Data randomized — run the agent to analyze.';
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      lineChart.data.datasets[0].data = [...baseSales];
+      barChart.data.datasets[0].data = [...baseRegionVals];
+      pieChart.data.datasets[0].data = [55,30,15];
+      lineChart.update(); barChart.update(); pieChart.update();
+      log('Reset data to baseline');
+      document.getElementById('agentSummary').textContent = 'Reset to baseline.';
+    });
+
+    // initial
+    log('Demo loaded — ready. Try "Run Agent".');
+    // small celebratory pop for first-time load
+    setTimeout(()=>{ burstConfetti(); }, 800);
+  </script>
+</body>
+</html>
