@@ -61,13 +61,9 @@ if gh repo view "$GH_USER/$REPO_NAME" >/dev/null 2>&1; then
     git remote add origin "$REMOTE_URL"
   fi
   echo "Pushing to origin/${BRANCH} using gh..."
-  GIT_ASKPASS="" git push -u origin "$BRANCH" 2>&1 | grep -v "Password" || {
-    # If regular push fails, use gh auth git-credential helper
-    echo "Using gh credential helper..."
-    git config --local credential.helper ""
-    git config --local credential.helper '!gh auth git-credential'
-    git push -u origin "$BRANCH"
-  }
+  # Configure git to use gh for authentication
+  git config --local credential.helper '!gh auth git-credential'
+  git push -u origin "$BRANCH"
 else
   echo "Creating repository $GH_USER/$REPO_NAME on GitHub and pushing..."
   # creates, sets remote, and pushes the current directory to the new repo
